@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Transport Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🚌 Public Transport Tracker</h1>
+                <p class="tagline">Check schedules and track delays in real-time</p>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav">
+            <ul class="nav-links">
+                <li><a href="#routes" class="nav-link active" onclick="switchTab('routes')">Routes</a></li>
+                <li><a href="#schedules" class="nav-link" onclick="switchTab('schedules')">Schedules</a></li>
+                <li><a href="#delays" class="nav-link" onclick="switchTab('delays')">Active Delays</a></li>
+                <li><a href="#stations" class="nav-link" onclick="switchTab('stations')">Stations</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Routes Tab -->
+            <section id="routes-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2>Available Routes</h2>
+                    <button class="btn btn-primary" onclick="toggleAddRoute()">+ Add Route</button>
+                </div>
+
+                <!-- Add Route Form (Hidden by default) -->
+                <div id="add-route-form" class="form-container hidden">
+                    <h3>Add New Route</h3>
+                    <form onsubmit="addRoute(event)">
+                        <div class="form-group">
+                            <label for="route_name">Route Name:</label>
+                            <input type="text" id="route_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="route_type">Type:</label>
+                            <select id="route_type" required>
+                                <option value="bus">Bus</option>
+                                <option value="train">Train</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="operator">Operator:</label>
+                            <input type="text" id="operator">
+                        </div>
+                        <div class="form-group">
+                            <label for="start_station">Start Station:</label>
+                            <input type="text" id="start_station" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_station">End Station:</label>
+                            <input type="text" id="end_station" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Create Route</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleAddRoute()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Routes List -->
+                <div id="routes-list" class="routes-list">
+                    <p class="loading">Loading routes...</p>
+                </div>
+            </section>
+
+            <!-- Schedules Tab -->
+            <section id="schedules-tab" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>Schedules</h2>
+                    <div class="filters">
+                        <input type="text" id="search-schedule" placeholder="Search schedules..." class="search-input">
+                        <select id="day-filter" onchange="filterSchedules()">
+                            <option value="">All Days</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Schedules Table -->
+                <div id="schedules-list" class="table-container">
+                    <p class="loading">Loading schedules...</p>
+                </div>
+            </section>
+
+            <!-- Delays Tab -->
+            <section id="delays-tab" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>Active Delays</h2>
+                    <button class="btn btn-primary" onclick="toggleReportDelay()">+ Report Delay</button>
+                </div>
+
+                <!-- Report Delay Form (Hidden by default) -->
+                <div id="report-delay-form" class="form-container hidden">
+                    <h3>Report a Delay</h3>
+                    <form onsubmit="reportDelay(event)">
+                        <div class="form-group">
+                            <label for="delay_schedule_id">Schedule ID:</label>
+                            <input type="number" id="delay_schedule_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="delay_minutes">Delay (minutes):</label>
+                            <input type="number" id="delay_minutes" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="delay_reason">Reason:</label>
+                            <textarea id="delay_reason" rows="3"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Report Delay</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleReportDelay()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Delays List -->
+                <div id="delays-list" class="delays-list">
+                    <p class="loading">Loading delays...</p>
+                </div>
+            </section>
+
+            <!-- Stations Tab -->
+            <section id="stations-tab" class="tab-content hidden">
+                <div class="section-header">
+                    <h2>Transport Stations</h2>
+                    <button class="btn btn-primary" onclick="toggleAddStation()">+ Add Station</button>
+                </div>
+
+                <!-- Add Station Form (Hidden by default) -->
+                <div id="add-station-form" class="form-container hidden">
+                    <h3>Add New Station</h3>
+                    <form onsubmit="addStation(event)">
+                        <div class="form-group">
+                            <label for="station_name">Station Name:</label>
+                            <input type="text" id="station_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="station_type">Type:</label>
+                            <select id="station_type">
+                                <option value="bus_stop">Bus Stop</option>
+                                <option value="train_station">Train Station</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="station_address">Address:</label>
+                            <input type="text" id="station_address">
+                        </div>
+                        <div class="form-group">
+                            <label for="station_latitude">Latitude:</label>
+                            <input type="number" id="station_latitude" step="0.000001">
+                        </div>
+                        <div class="form-group">
+                            <label for="station_longitude">Longitude:</label>
+                            <input type="number" id="station_longitude" step="0.000001">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Create Station</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleAddStation()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Stations Grid -->
+                <div id="stations-list" class="stations-grid">
+                    <p class="loading">Loading stations...</p>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2026 Public Transport Tracker | Multi-Container OpenShift Application</p>
+        </footer>
+    </div>
+
+    <!-- API Status Indicator -->
+    <div id="status-indicator" class="status-indicator">
+        <span id="status-text">Checking API...</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
