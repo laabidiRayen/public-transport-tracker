@@ -4,7 +4,7 @@
 */
 
 // Configuration
-const API_BASE_URL = 'http://localhost:5000/api'; // Will be overridden in OpenShift
+let API_BASE_URL = 'http://localhost:5000/api'; // Will be overridden in OpenShift
 const API_TIMEOUT = 10000; // 10 seconds
 
 /**
