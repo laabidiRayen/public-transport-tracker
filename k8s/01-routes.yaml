@@ -1,0 +1,35 @@
+---
+# OpenShift Route for Frontend (External Access)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: frontend-route
+  namespace: transport-tracker
+spec:
+  host: transport-tracker-frontend.apps.example.com
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: frontend-service
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+---
+# OpenShift Route for Backend API (External Access)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: backend-route
+  namespace: transport-tracker
+spec:
+  host: transport-tracker-api.apps.example.com
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: backend-service
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
