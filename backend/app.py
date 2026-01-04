@@ -6,10 +6,11 @@ Main entry point for the REST API
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, date, time
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import logging
+from flask.json import JSONEncoder
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +20,21 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
-# Configuration from environment variables
+# -----------------------
+# Custom JSON encoder
+# -----------------------
+class CustomJSONEncoder(JSONEncoder):
+    """Convert datetime, date, and time objects to ISO strings"""
+    def default(self, obj):
+        if isinstance(obj, (datetime, date, time)):
+            return obj.isoformat()
+        return super().default(obj)
+
+app.json_encoder = CustomJSONEncoder
+
+# -----------------------
+# Database configuration
+# -----------------------
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '5432')
 DB_NAME = os.getenv('DB_NAME', 'transport_db')
@@ -42,13 +57,25 @@ def get_db_connection():
         logger.error(f"Database connection error: {e}")
         raise
 
-# ============================================================================
-# HEALTH CHECK ENDPOINTS
+# -----------------------
+# Error helper
+# -----------------------
+def error_response(message, status_code):
+    return jsonify({'status': 'error', 'message': message}), status_code
+
+@app.errorhandler(404)
+def not_found(e):
+    return error_response('Endpoint not found', 404)
+
+@app.errorhandler(500)
+def internal_error(e):
+    return error_response('Internal server error', 500)
+
 # ============================================================================
 
+# HEALTH CHECK
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    """Health check endpoint"""
     try:
         conn = get_db_connection()
         conn.close()
@@ -68,7 +95,6 @@ def health_check():
 
 @app.route('/api', methods=['GET'])
 def api_info():
-    """API information endpoint"""
     return jsonify({
         'service': 'Public Transport Tracker API',
         'version': '1.0.0',
@@ -82,12 +108,10 @@ def api_info():
     }), 200
 
 # ============================================================================
-# ROUTES ENDPOINTS
-# ============================================================================
 
+# ROUTES ENDPOINTS
 @app.route('/api/routes', methods=['GET'])
 def get_routes():
-    """Get all routes"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -95,17 +119,12 @@ def get_routes():
         routes = cur.fetchall()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': [dict(route) for route in routes]
-        }), 200
+        return jsonify({'status': 'success', 'data': routes}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/routes/<int:route_id>', methods=['GET'])
 def get_route(route_id):
-    """Get specific route by ID"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -113,57 +132,41 @@ def get_route(route_id):
         route = cur.fetchone()
         cur.close()
         conn.close()
-        
         if not route:
             return error_response(f'Route {route_id} not found', 404)
-        
-        return jsonify({
-            'status': 'success',
-            'data': dict(route)
-        }), 200
+        return jsonify({'status': 'success', 'data': route}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/routes', methods=['POST'])
 def create_route():
-    """Create a new route"""
     try:
         data = request.get_json()
-        
-        # Validate required fields
         required = ['route_name', 'route_type', 'start_station', 'end_station']
         if not all(field in data for field in required):
             return error_response('Missing required fields', 400)
-        
+
         conn = get_db_connection()
         cur = conn.cursor()
-        
         cur.execute(
             '''INSERT INTO routes (route_name, route_type, operator, start_station, end_station)
                VALUES (%s, %s, %s, %s, %s) RETURNING route_id''',
             (data['route_name'], data['route_type'], data.get('operator'),
              data['start_station'], data['end_station'])
         )
-        
         route_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': {'route_id': route_id, 'message': 'Route created successfully'}
-        }), 201
+        return jsonify({'status': 'success', 'data': {'route_id': route_id, 'message': 'Route created successfully'}}), 201
     except Exception as e:
         return error_response(str(e), 500)
 
 # ============================================================================
-# STATIONS ENDPOINTS
-# ============================================================================
 
+# STATIONS ENDPOINTS
 @app.route('/api/stations', methods=['GET'])
 def get_stations():
-    """Get all stations"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -171,17 +174,12 @@ def get_stations():
         stations = cur.fetchall()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': [dict(station) for station in stations]
-        }), 200
+        return jsonify({'status': 'success', 'data': stations}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/stations/<int:station_id>', methods=['GET'])
 def get_station(station_id):
-    """Get specific station by ID"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -189,64 +187,46 @@ def get_station(station_id):
         station = cur.fetchone()
         cur.close()
         conn.close()
-        
         if not station:
             return error_response(f'Station {station_id} not found', 404)
-        
-        return jsonify({
-            'status': 'success',
-            'data': dict(station)
-        }), 200
+        return jsonify({'status': 'success', 'data': station}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/stations', methods=['POST'])
 def create_station():
-    """Create a new station"""
     try:
         data = request.get_json()
-        
-        # Validate required fields
         if 'station_name' not in data:
             return error_response('Missing required field: station_name', 400)
-        
         conn = get_db_connection()
         cur = conn.cursor()
-        
         cur.execute(
             '''INSERT INTO stations (station_name, station_type, latitude, longitude, address)
                VALUES (%s, %s, %s, %s, %s) RETURNING station_id''',
             (data['station_name'], data.get('station_type'), data.get('latitude'),
              data.get('longitude'), data.get('address'))
         )
-        
         station_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': {'station_id': station_id, 'message': 'Station created successfully'}
-        }), 201
+        return jsonify({'status': 'success', 'data': {'station_id': station_id, 'message': 'Station created successfully'}}), 201
     except Exception as e:
         return error_response(str(e), 500)
 
 # ============================================================================
-# SCHEDULES ENDPOINTS
-# ============================================================================
 
+# SCHEDULES ENDPOINTS
 @app.route('/api/schedules', methods=['GET'])
 def get_schedules():
-    """Get all schedules with optional filters"""
     try:
         route_id = request.args.get('route_id')
         day_of_week = request.args.get('day_of_week')
-        
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        query = '''SELECT s.schedule_id, s.route_id, r.route_name, 
+
+        query = '''SELECT s.schedule_id, s.route_id, r.route_name,
                           ds.station_name as departure_station,
                           as_s.station_name as arrival_station,
                           s.departure_time, s.arrival_time, s.day_of_week, s.frequency
@@ -254,7 +234,7 @@ def get_schedules():
                    JOIN routes r ON s.route_id = r.route_id
                    JOIN stations ds ON s.departure_station_id = ds.station_id
                    JOIN stations as_s ON s.arrival_station_id = as_s.station_id'''
-        
+
         params = []
         if route_id:
             query += ' WHERE s.route_id = %s'
@@ -263,27 +243,22 @@ def get_schedules():
             query += ' AND' if params else ' WHERE'
             query += ' s.day_of_week = %s'
             params.append(day_of_week)
-        
+
         query += ' ORDER BY s.schedule_id'
         cur.execute(query, params)
         schedules = cur.fetchall()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': [dict(schedule) for schedule in schedules]
-        }), 200
+
+        return jsonify({'status': 'success', 'data': schedules}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/schedules/<int:schedule_id>', methods=['GET'])
 def get_schedule(schedule_id):
-    """Get specific schedule by ID"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
         cur.execute('''SELECT s.schedule_id, s.route_id, r.route_name,
                               ds.station_name as departure_station,
                               as_s.station_name as arrival_station,
@@ -293,28 +268,20 @@ def get_schedule(schedule_id):
                        JOIN stations ds ON s.departure_station_id = ds.station_id
                        JOIN stations as_s ON s.arrival_station_id = as_s.station_id
                        WHERE s.schedule_id = %s''', (schedule_id,))
-        
         schedule = cur.fetchone()
         cur.close()
         conn.close()
-        
         if not schedule:
             return error_response(f'Schedule {schedule_id} not found', 404)
-        
-        return jsonify({
-            'status': 'success',
-            'data': dict(schedule)
-        }), 200
+        return jsonify({'status': 'success', 'data': schedule}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/routes/<int:route_id>/schedules', methods=['GET'])
 def get_route_schedules(route_id):
-    """Get all schedules for a specific route"""
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
         cur.execute('''SELECT s.schedule_id, s.route_id, r.route_name,
                               ds.station_name as departure_station,
                               as_s.station_name as arrival_station,
@@ -324,51 +291,34 @@ def get_route_schedules(route_id):
                        JOIN stations ds ON s.departure_station_id = ds.station_id
                        JOIN stations as_s ON s.arrival_station_id = as_s.station_id
                        WHERE s.route_id = %s ORDER BY s.schedule_id''', (route_id,))
-        
         schedules = cur.fetchall()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': [dict(schedule) for schedule in schedules]
-        }), 200
+        return jsonify({'status': 'success', 'data': schedules}), 200
     except Exception as e:
         return error_response(str(e), 500)
 
 @app.route('/api/schedules', methods=['POST'])
 def create_schedule():
-    """Create a new schedule"""
     try:
         data = request.get_json()
-        
-        # Validate required fields
-        required = ['route_id', 'departure_station_id', 'arrival_station_id',
-                   'departure_time', 'arrival_time']
+        required = ['route_id', 'departure_station_id', 'arrival_station_id', 'departure_time', 'arrival_time']
         if not all(field in data for field in required):
             return error_response('Missing required fields', 400)
-        
         conn = get_db_connection()
         cur = conn.cursor()
-        
         cur.execute(
             '''INSERT INTO schedules (route_id, departure_station_id, arrival_station_id,
                                      departure_time, arrival_time, day_of_week, frequency)
                VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING schedule_id''',
             (data['route_id'], data['departure_station_id'], data['arrival_station_id'],
-             data['departure_time'], data['arrival_time'],
-             data.get('day_of_week'), data.get('frequency', 15))
+             data['departure_time'], data['arrival_time'], data.get('day_of_week'), data.get('frequency', 15))
         )
-        
         schedule_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': {'schedule_id': schedule_id, 'message': 'Schedule created successfully'}
-        }), 201
+        return jsonify({'status': 'success', 'data': {'schedule_id': schedule_id, 'message': 'Schedule created successfully'}}), 201
     except Exception as e:
         return error_response(str(e), 500)
 

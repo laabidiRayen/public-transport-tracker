@@ -2,7 +2,7 @@
 -- Date: 2026-01-04
 
 -- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS transport_db;
+--CREATE DATABASE IF NOT EXISTS transport_db;--
 \c transport_db;
 
 -- Drop existing tables if they exist (for clean slate)

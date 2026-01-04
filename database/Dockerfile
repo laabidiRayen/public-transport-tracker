@@ -6,8 +6,7 @@ FROM postgres:15-alpine
 # Set environment variables
 ENV POSTGRES_DB=transport_db \
     POSTGRES_USER=postgres \
-    POSTGRES_PASSWORD=postgres \
-    POSTGRES_INITDB_ARGS="-c shared_buffers=256MB -c max_connections=200"
+    POSTGRES_PASSWORD=postgres
 
 # Copy initialization script
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
@@ -19,5 +18,4 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=5 \
 # Expose port
 EXPOSE 5432
 
-# Run PostgreSQL
 # Default entrypoint handles initialization automatically
