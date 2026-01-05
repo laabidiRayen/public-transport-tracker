@@ -80,19 +80,57 @@
             <section id="schedules-tab" class="tab-content hidden">
                 <div class="section-header">
                     <h2>Schedules</h2>
-                    <div class="filters">
-                        <input type="text" id="search-schedule" placeholder="Search schedules..." class="search-input">
-                        <select id="day-filter" onchange="filterSchedules()">
-                            <option value="">All Days</option>
-                            <option value="Monday">Monday</option>
-                            <option value="Tuesday">Tuesday</option>
-                            <option value="Wednesday">Wednesday</option>
-                            <option value="Thursday">Thursday</option>
-                            <option value="Friday">Friday</option>
-                            <option value="Saturday">Saturday</option>
-                            <option value="Sunday">Sunday</option>
-                        </select>
-                    </div>
+                    <button class="btn btn-primary" onclick="toggleAddSchedule()">+ Add Schedule</button>
+                </div>
+
+                <!-- Add Schedule Form (Hidden by default) -->
+                <div id="add-schedule-form" class="form-container hidden">
+                    <h3>Add New Schedule</h3>
+                    <form onsubmit="addSchedule(event)">
+                        <div class="form-group">
+                            <label for="schedule_route_id">Route ID:</label>
+                            <input type="number" id="schedule_route_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule_departure_time">Departure Time:</label>
+                            <input type="time" id="schedule_departure_time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule_arrival_time">Arrival Time:</label>
+                            <input type="time" id="schedule_arrival_time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="schedule_day">Day of Week:</label>
+                            <select id="schedule_day" required>
+                                <option value="">Select a day...</option>
+                                <option value="Monday">Monday</option>
+                                <option value="Tuesday">Tuesday</option>
+                                <option value="Wednesday">Wednesday</option>
+                                <option value="Thursday">Thursday</option>
+                                <option value="Friday">Friday</option>
+                                <option value="Saturday">Saturday</option>
+                                <option value="Sunday">Sunday</option>
+                            </select>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-success">Create Schedule</button>
+                            <button type="button" class="btn btn-secondary" onclick="toggleAddSchedule()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="search-schedule" placeholder="Search schedules..." class="search-input">
+                    <select id="day-filter" onchange="filterSchedules()">
+                        <option value="">All Days</option>
+                        <option value="Monday">Monday</option>
+                        <option value="Tuesday">Tuesday</option>
+                        <option value="Wednesday">Wednesday</option>
+                        <option value="Thursday">Thursday</option>
+                        <option value="Friday">Friday</option>
+                        <option value="Saturday">Saturday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
                 </div>
 
                 <!-- Schedules Table -->

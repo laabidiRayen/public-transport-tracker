@@ -229,6 +229,41 @@ async function viewRouteSchedules(routeId) {
 }
 
 /**
+ * Toggle add schedule form visibility
+ */
+function toggleAddSchedule() {
+    const form = document.getElementById('add-schedule-form');
+    form.classList.toggle('hidden');
+}
+
+/**
+ * Add new schedule
+ */
+async function addSchedule(event) {
+    event.preventDefault();
+
+    const scheduleData = {
+        route_id: document.getElementById('schedule_route_id').value,
+        departure_time: document.getElementById('schedule_departure_time').value,
+        arrival_time: document.getElementById('schedule_arrival_time').value,
+        day_of_week: document.getElementById('schedule_day').value
+    };
+
+    try {
+        await createSchedule(scheduleData);
+        showAlert('Schedule created successfully!', 'success');
+
+        // Reset form and reload data
+        event.target.reset();
+        toggleAddSchedule();
+        allSchedules = await fetchSchedules();
+        renderSchedulesList(allSchedules);
+    } catch (error) {
+        showAlert('Error creating schedule: ' + error.message, 'error');
+    }
+}
+
+/**
  * View delays for a specific route
  */
 async function viewRouteDelays(routeId) {

@@ -211,6 +211,19 @@ async function createSchedule(scheduleData) {
         throw error;
     }
 }
+        return [];
+    }
+}
+
+async function createSchedule(scheduleData) {
+    try {
+        const response = await apiPost('/schedules', scheduleData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating schedule:', error);
+        throw error;
+    }
+}
 
 // ============================================================================
 // DELAYS API
@@ -303,4 +316,3 @@ async function checkHealth() {
         return false;
     }
 }
-window.addEventListener('DOMContentLoaded', detectApiUrl);
