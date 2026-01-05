@@ -108,8 +108,16 @@ function switchTab(tabName) {
         tab.classList.add('active');
     }
 
-    // Add active class to clicked nav link
-    event.target.classList.add('active');
+    // Add active class to clicked nav link (only if event is provided)
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // If no event, manually set the nav link as active
+        const navLink = document.querySelector(`[data-tab="${tabName}"]`);
+        if (navLink) {
+            navLink.classList.add('active');
+        }
+    }
 }
 
 // ============================================================================
