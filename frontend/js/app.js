@@ -239,22 +239,41 @@ function toggleAddSchedule() {
 /**
  * Add new schedule
  */
-async function addSchedule(event) {
-    event.preventDefault();
+async function addSchedule(e) {
+    e.preventDefault();
+
+    const form = e.target;
 
     const scheduleData = {
-        route_id: document.getElementById('schedule_route_id').value,
-        departure_time: document.getElementById('schedule_departure_time').value,
-        arrival_time: document.getElementById('schedule_arrival_time').value,
-        day_of_week: document.getElementById('schedule_day').value
+        route_id: Number(form.route_id.value),
+        departure_station_id: Number(form.departure_station_id.value),
+        arrival_station_id: Number(form.arrival_station_id.value),
+        arrival_time: form.arrival_time.value,
+        departure_time: form.departure_time.value,
+        day_of_week: form.day_of_week.value
     };
+
+    console.log("📤 Sending schedule:", scheduleData);
+
+    if (!Number.isFinite(scheduleData.route_id) || scheduleData.route_id <= 0) {
+        showAlert('Please enter a valid Route ID', 'error');
+        return;
+    }
+    if (!Number.isFinite(scheduleData.departure_station_id) || scheduleData.departure_station_id <= 0) {
+        showAlert('Please enter a valid Departure Station ID', 'error');
+        return;
+    }
+    if (!Number.isFinite(scheduleData.arrival_station_id) || scheduleData.arrival_station_id <= 0) {
+        showAlert('Please enter a valid Arrival Station ID', 'error');
+        return;
+    }
 
     try {
         await createSchedule(scheduleData);
         showAlert('Schedule created successfully!', 'success');
 
         // Reset form and reload data
-        event.target.reset();
+        form.reset();
         toggleAddSchedule();
         allSchedules = await fetchSchedules();
         renderSchedulesList(allSchedules);

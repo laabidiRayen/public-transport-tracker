@@ -430,10 +430,18 @@ def get_route_schedules(route_id):
 def create_schedule():
     """Create new schedule"""
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
+
+        # Backward-compatibility: some clients send a single station_id
+        # Use it for both departure/arrival if specific fields are missing.
+        if 'station_id' in data:
+            data.setdefault('departure_station_id', data['station_id'])
+            data.setdefault('arrival_station_id', data['station_id'])
+
         required = ['route_id', 'departure_station_id', 'arrival_station_id', 'departure_time', 'arrival_time']
-        if not all(field in data for field in required):
-            return error_response('Missing required fields', 400)
+        missing = [field for field in required if data.get(field) in (None, '')]
+        if missing:
+            return error_response(f"Missing required fields: {', '.join(missing)}", 400)
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
