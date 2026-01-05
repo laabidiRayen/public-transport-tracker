@@ -3,18 +3,10 @@
    Base URL: http://backend-service:5000/api (configurable)
 */
 
-// Configuration - Detect environment and use appropriate backend URL
-// When running in-cluster (via Nginx in pod), use internal service DNS
-// When accessing from outside cluster, use external HTTPS route
-const isInCluster = window.location.hostname === 'localhost' || 
-                    window.location.hostname === '127.0.0.1' ||
-                    window.location.hostname.includes('pod') ||
-                    window.location.hostname.endsWith('.local');
-
-let API_BASE_URL = isInCluster 
-    ? 'http://public-transport-tracker-git:5000/api'
-    : 'https://public-transport-tracker-git-public-transport-trackerr.apps.na46r.prod.ole.redhat.com/api';
-
+// Configuration - Use relative path for API calls
+// The browser will automatically use the same origin (domain) it's currently on
+// This works for both external routes and internal access
+const API_BASE_URL = '/api';
 const API_TIMEOUT = 30000; // 30 seconds
 
 /**
