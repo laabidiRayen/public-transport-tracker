@@ -1,0 +1,126 @@
+---
+# SQLite Backend PersistentVolumeClaim (for development/testing)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+  namespace: transport-tracker
+  labels:
+    app: backend
+    database: sqlite
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+# Backend API DeploymentConfig with SQLite (Alternative to PostgreSQL)
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: backend-sqlite
+  namespace: transport-tracker
+  labels:
+    app: backend-sqlite
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: transport-tracker
+    variant: sqlite
+spec:
+  replicas: 1
+  selector:
+    app: backend-sqlite
+    deploymentconfig: backend-sqlite
+  strategy:
+    type: Recreate
+    recreateParams:
+      timeoutSeconds: 600
+  template:
+    metadata:
+      labels:
+        app: backend-sqlite
+        deploymentconfig: backend-sqlite
+    spec:
+      containers:
+      - name: backend
+        image: image-registry.openshift-image-registry.svc:5000/transport-tracker/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: DB_TYPE
+          value: "sqlite"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: transport-secrets
+              key: SECRET_KEY
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: sqlite-data
+          mountPath: /app/database
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          timeoutSeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+      volumes:
+      - name: sqlite-data
+        persistentVolumeClaim:
+          claimName: sqlite-pvc
+  triggers:
+  - type: ConfigChange
+  - type: ImageChange
+    imageChangeParams:
+      automatic: true
+      containerNames:
+      - backend
+      from:
+        kind: ImageStreamTag
+        namespace: transport-tracker
+        name: backend:latest
+
+---
+# Backend SQLite Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-sqlite-service
+  namespace: transport-tracker
+  labels:
+    app: backend-sqlite
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+      name: http
+  selector:
+    app: backend-sqlite

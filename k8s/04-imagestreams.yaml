@@ -1,0 +1,29 @@
+---
+# Backend ImageStream
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: backend
+  namespace: transport-tracker
+  labels:
+    app: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: transport-tracker
+spec:
+  lookupPolicy:
+    local: false
+
+---
+# Frontend ImageStream
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: frontend
+  namespace: transport-tracker
+  labels:
+    app: frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: transport-tracker
+spec:
+  lookupPolicy:
+    local: false

@@ -1,0 +1,69 @@
+---
+# Backend BuildConfig
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: backend
+  namespace: transport-tracker
+  labels:
+    app: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: transport-tracker
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: backend:latest
+  source:
+    type: Git
+    git:
+      uri: https://github.com/laabidiRayen/public-transport-tracker.git
+      ref: main
+    contextDir: backend
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+  - type: ConfigChange
+  - type: GitHub
+    github:
+      secret: github-webhook-secret
+  - type: Generic
+    generic:
+      secret: generic-webhook-secret
+
+---
+# Frontend BuildConfig
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: frontend
+  namespace: transport-tracker
+  labels:
+    app: frontend
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: transport-tracker
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: frontend:latest
+  source:
+    type: Git
+    git:
+      uri: https://github.com/laabidiRayen/public-transport-tracker.git
+      ref: main
+    contextDir: frontend
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+  - type: ConfigChange
+  - type: GitHub
+    github:
+      secret: github-webhook-secret
+  - type: Generic
+    generic:
+      secret: generic-webhook-secret
