@@ -303,41 +303,4 @@ async function checkHealth() {
         return false;
     }
 }
-
-// ============================================================================
-// API CONFIGURATION
-// ============================================================================
-
-/**
- * Set custom API base URL (useful for environment-specific URLs)
- */
-function setApiBaseUrl(url) {
-    API_BASE_URL = url;
-}
-
-/**
- * Get current API base URL
- */
-function getApiBaseUrl() {
-    return API_BASE_URL;
-}
-
-/**
- * Detect API URL from current location (useful in OpenShift)
- */
-function detectApiUrl() {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    
-    // In OpenShift, backend service DNS: http://backend-service:5000
-    // But from browser, we need to use the exposed route
-    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        setApiBaseUrl('http://localhost:5000/api');
-    } else {
-        // In production OpenShift, adjust this based on your Route
-        setApiBaseUrl(`${protocol}//${hostname}:5000/api`);
-    }
-}
-
-// Call on page load
 window.addEventListener('DOMContentLoaded', detectApiUrl);
