@@ -35,7 +35,119 @@ app.json_encoder = CustomJSONEncoder
 # -----------------------
 # Database configuration (SQLite)
 # -----------------------
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'transport_db.sqlite')
+# Use /app/database for containerized environment, otherwise use relative path
+if os.path.exists('/app/database'):
+    DB_PATH = '/app/database/transport_db.sqlite'
+else:
+    DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'transport_db.sqlite')
+
+# Initialize database if it doesn't exist
+def init_database():
+    """Initialize database with schema if it doesn't exist"""
+    if not os.path.exists(DB_PATH):
+        logger.info(f"Initializing database at {DB_PATH}")
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Execute schema directly
+        schema = """
+        -- SQLite Database Schema
+        DROP TABLE IF EXISTS user_favorites;
+        DROP TABLE IF EXISTS users;
+        DROP TABLE IF EXISTS delays;
+        DROP TABLE IF EXISTS schedules;
+        DROP TABLE IF EXISTS stations;
+        DROP TABLE IF EXISTS routes;
+
+        CREATE TABLE routes (
+            route_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            route_name VARCHAR(100) NOT NULL,
+            route_type VARCHAR(20) NOT NULL CHECK (route_type IN ('bus', 'train')),
+            operator VARCHAR(100),
+            start_station VARCHAR(100) NOT NULL,
+            end_station VARCHAR(100) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_routes_type ON routes(route_type);
+        CREATE INDEX idx_routes_operator ON routes(operator);
+
+        CREATE TABLE stations (
+            station_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            station_name VARCHAR(100) NOT NULL UNIQUE,
+            station_type VARCHAR(20) CHECK (station_type IN ('bus_stop', 'train_station')),
+            latitude DECIMAL(10, 8),
+            longitude DECIMAL(11, 8),
+            address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_stations_name ON stations(station_name);
+        CREATE INDEX idx_stations_type ON stations(station_type);
+
+        CREATE TABLE schedules (
+            schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            route_id INT NOT NULL REFERENCES routes(route_id) ON DELETE CASCADE,
+            departure_station_id INT NOT NULL REFERENCES stations(station_id),
+            arrival_station_id INT NOT NULL REFERENCES stations(station_id),
+            departure_time TIME NOT NULL,
+            arrival_time TIME NOT NULL,
+            day_of_week VARCHAR(20),
+            frequency INT DEFAULT 15,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CHECK (arrival_time > departure_time)
+        );
+        CREATE INDEX idx_schedules_route ON schedules(route_id);
+        CREATE INDEX idx_schedules_day ON schedules(day_of_week);
+        CREATE INDEX idx_schedules_departure_station ON schedules(departure_station_id);
+        CREATE INDEX idx_schedules_arrival_station ON schedules(arrival_station_id);
+
+        CREATE TABLE delays (
+            delay_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            schedule_id INT NOT NULL REFERENCES schedules(schedule_id) ON DELETE CASCADE,
+            delay_minutes INT NOT NULL DEFAULT 0,
+            reason TEXT,
+            reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE,
+            resolved_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CHECK (delay_minutes >= 0)
+        );
+        CREATE INDEX idx_delays_schedule ON delays(schedule_id);
+        CREATE INDEX idx_delays_active ON delays(is_active);
+        CREATE INDEX idx_delays_reported ON delays(reported_at);
+
+        CREATE TABLE users (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username VARCHAR(50) NOT NULL UNIQUE,
+            email VARCHAR(100) NOT NULL UNIQUE,
+            password_hash VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_users_username ON users(username);
+        CREATE INDEX idx_users_email ON users(email);
+
+        CREATE TABLE user_favorites (
+            favorite_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+            route_id INT NOT NULL REFERENCES routes(route_id) ON DELETE CASCADE,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, route_id)
+        );
+        CREATE INDEX idx_user_favorites_user ON user_favorites(user_id);
+        CREATE INDEX idx_user_favorites_route ON user_favorites(route_id);
+        """
+        
+        cursor.executescript(schema)
+        conn.commit()
+        logger.info("Database initialized successfully")
+        conn.close()
+    else:
+        logger.info(f"Using existing database at {DB_PATH}")
 
 # Database connection helper
 def get_db_connection():
@@ -53,6 +165,9 @@ def dict_from_row(row):
     if row is None:
         return None
     return dict(row)
+
+# Initialize database on startup
+init_database()
 
 # -----------------------
 # Error helper

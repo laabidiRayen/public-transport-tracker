@@ -20,9 +20,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies only
+# Install runtime dependencies (removed postgresql-client, SQLite is built-in)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python dependencies from builder (installed globally)
@@ -31,6 +31,12 @@ COPY --from=builder /usr/local /usr/local
 # Copy application code
 COPY app.py .
 COPY config.py .
+
+# Non-root user for security
+RUN useradd -m -u 1000 appuser
+
+# Create database directory and set permissions
+RUN mkdir -p /app/database && chown -R appuser:appuser /app
 
 # Set environment variables
 ENV PATH=/usr/local/bin:$PATH \
@@ -41,13 +47,12 @@ ENV PATH=/usr/local/bin:$PATH \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000/api/health')" || exit 1
+    CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Expose port
 EXPOSE 5000
 
-# Non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# Switch to non-root user
 USER appuser
 
 # Run Flask application
