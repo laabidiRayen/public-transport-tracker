@@ -3,8 +3,8 @@
    Base URL: http://backend-service:5000/api (configurable)
 */
 
-// Configuration - OpenShift backend URL (NEW service name)
-let API_BASE_URL = 'http://public-transport-tracker-backend-new-public-transport-tracker.apps.na46r.prod.ole.redhat.com/api';
+// Configuration - OpenShift backend URL
+let API_BASE_URL = 'http://public-transport-tracker-1-public-transport-tracker.apps.na46r.prod.ole.redhat.com/api';
 const API_TIMEOUT = 10000; // 10 seconds
 
 /**
