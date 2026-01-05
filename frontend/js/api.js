@@ -4,7 +4,10 @@
 */
 
 // Configuration
-let API_BASE_URL = 'http://localhost:5000/api'; // Will be overridden in OpenShift
+// Auto-detect environment: OpenShift vs Local
+let API_BASE_URL = window.location.hostname.includes('redhat.com') 
+    ? 'http://public-transport-tracker-backend-public-transport-tracker.apps.na46r.prod.ole.redhat.com/api'
+    : 'http://localhost:5000/api';
 const API_TIMEOUT = 10000; // 10 seconds
 
 /**
