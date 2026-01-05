@@ -3,8 +3,9 @@
    Base URL: http://backend-service:5000/api (configurable)
 */
 
-// Configuration - OpenShift backend URL (NEW service name)
-let API_BASE_URL = 'https://public-transport-tracker-git-public-transport-trackerr.apps.na46r.prod.ole.redhat.com/api';
+// Configuration - Use internal Kubernetes service DNS for better reliability
+// This allows the frontend to reach the backend without going through the external route
+let API_BASE_URL = 'http://public-transport-tracker-git:5000/api';
 const API_TIMEOUT = 30000; // 30 seconds
 
 /**
