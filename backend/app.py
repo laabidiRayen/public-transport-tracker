@@ -187,6 +187,15 @@ def internal_error(e):
 # HEALTH CHECK ENDPOINTS
 # ============================================================================
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint - OpenShift health check"""
+    return jsonify({
+        'status': 'ok',
+        'service': 'Public Transport Tracker API',
+        'message': 'Service is running. Use /api endpoints for data.'
+    }), 200
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
