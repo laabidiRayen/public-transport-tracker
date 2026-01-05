@@ -5,7 +5,7 @@
 
 // Configuration - OpenShift backend URL (NEW service name)
 let API_BASE_URL = 'https://public-transport-tracker-git-public-transport-trackerr.apps.na46r.prod.ole.redhat.com/api';
-const API_TIMEOUT = 10000; // 10 seconds
+const API_TIMEOUT = 30000; // 30 seconds
 
 /**
  * Generic fetch wrapper with error handling
